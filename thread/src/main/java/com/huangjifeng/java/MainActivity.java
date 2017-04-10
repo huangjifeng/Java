@@ -43,55 +43,116 @@ public class MainActivity extends AppCompatActivity {
     /*
     * 多线程的通信问题
     * 线程间通信：其实就是多个线程在操作同一个资源，但是操作的动作不同
-    *
-    *
-    *
-    *
+    * 等待唤醒机制
+    * 线程运行的时候内存中会建立一个线程池，等待线程都放在线程池当中，当notify()的时候都是唤醒
+    * 线程池中的线程，通常唤醒第一个被wait()的线程
+    * wait() / notify() / notifyAll()  方法必须有对象监视器，放在同步代码中，而且这些方法必须标识出这个
+    * 方法对应的线程同步对应的锁，因为同步会出现嵌套，所以要加以区分wait和notify是谁的
+    * 只有同一个锁上的被等待线程，可以被同一个锁上notify唤醒，不可以对不同锁中的线程进行唤醒
+    * 等待和唤醒必须是同一把锁
     *
     * */
+    class Person {
+        String name;
+        String sex;
+        boolean flag = false;
+    }
 
+    class Input implements Runnable {
+        private final Person person;
 
+        public Input(Person person) {
+            this.person = person;
 
-
-
-
-
-
-    /*
-    * 死锁，示例如下
-    * 同步中嵌套同步，而锁却不同（例如同步代码块中有同步函数，同步函数中又有同步代码块）
-    *
-    *
-    *
-    * 死锁的例子如下
-    * Thread t1 = new Thread(new TestRunnable(true));
-        Thread t2 = new Thread(new TestRunnable(false));
-        t1.start();
-        t2.start();
-    * */
-    class TestRunnable implements Runnable {
-        private final boolean flag;
-        Object object01 = new Object();
-        Object object02 = new Object();
-
-        public TestRunnable(boolean flag) {
-            this.flag = flag;
         }
+
         @Override
         public void run() {
-            if (flag) {
-                synchronized (object01) {
-                    synchronized (object02) {
+            int i = 0;
+            while (true) {
+                synchronized (person) {
+                    if (person.flag) {
+                        try {
+                            person.wait();
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
                     }
-                }
-            } else {
-                synchronized (object02) {
-                    synchronized (object01) {
+                    if (i == 0) {
+                        person.name = "haha";
+                        person.sex = "man";
+                    } else {
+                        person.name = "丽丽";
+                        person.sex = "女";
                     }
+                    i = (i + 1) % 2;
+                    person.flag = true;
+                    person.notify();
                 }
             }
         }
     }
+
+    class OutPut implements Runnable {
+        private final Person person;
+
+        public OutPut(Person person) {
+            this.person = person;
+        }
+        @Override
+        public void run() {
+            synchronized (person) {
+                if (!person.flag) {
+                    try {
+                        person.wait();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+                Log.v("haha", person.name + "------" + person.sex);
+                person.flag = false;
+                person.notify();
+            }
+        }
+
+    }
+}
+
+
+/*
+* 死锁，示例如下
+* 同步中嵌套同步，而锁却不同（例如同步代码块中有同步函数，同步函数中又有同步代码块）
+*
+* 死锁的例子如下
+* Thread t1 = new Thread(new TestRunnable(true));
+    Thread t2 = new Thread(new TestRunnable(false));
+    t1.start();
+    t2.start();
+* */
+class TestRunnable implements Runnable {
+    private final boolean flag;
+    Object object01 = new Object();
+    Object object02 = new Object();
+
+    public TestRunnable(boolean flag) {
+        this.flag = flag;
+    }
+
+    @Override
+    public void run() {
+        if (flag) {
+            synchronized (object01) {
+                synchronized (object02) {
+                }
+            }
+        } else {
+            synchronized (object02) {
+                synchronized (object01) {
+                }
+            }
+        }
+    }
+}
 
     /*
     * 单例设计模式
@@ -184,82 +245,80 @@ public class MainActivity extends AppCompatActivity {
     *
     * */
 
-    class Bank {
-        private int num;
-        Object object = new Object();
+class Bank {
+    private int num;
+    Object object = new Object();
 
 
-        public synchronized void add(int n) {
-            synchronized (Bank.class) {
-            }
-            synchronized (this) {
-            }
+    public synchronized void add(int n) {
+        synchronized (Bank.class) {
+        }
+        synchronized (this) {
+        }
 
-            try {
-                num = num + n;
-                Thread.sleep(10);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+        try {
+            num = num + n;
+            Thread.sleep(10);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
     }
-
-    class Cus implements Runnable {
-        private Bank bank = new Bank();
-
-        @Override
-        public void run() {
-            for (int i = 0; i < 3; i++) {
-                bank.add(100);
-            }
-        }
-    }
-
-
-    /*
-    * 线程继承自Thread
-    *
-    * */
-    class MyThread extends Thread {
-
-        public MyThread(String name) {
-            super(name);       //父类已经有这样的构造方法，子类只要调用super（）方法即可 这样的构造方法可以给线程命名
-        }
-
-        @Override
-        public void run() {
-            super.run();
-            //获取线程的名称，一般通过  标准通用方式：Thread.currentThread().getName()
-            Log.v("haha", "Thread name ==== " + Thread.currentThread().getName());
-        }
-    }
-
-    /*
-    * 线程实现Runnable
-    * 这个类只能当做参数传给其他线程使用，不能使用start()方法启动该线程
-    * MyRunnable的实例不是线程
-    *
-    *
-    * 步骤：
-    * 1、定义类实现Runnable接口
-    * 2、覆盖Runnable接口中的run方法，将线程要运行的代码放在该Run方法中
-    * 3、通过Thread类建立线程对象
-    * 4、将Runnable接口的子类对象作为实际参数传递给Thread类的构造函数
-    * 5、调用Thread类的start方法开启线程并调用Runnable接口子类的run方法
-    *
-    *
-    * 实现方式和继承方式有什么区别
-    * 实现方式的好处：避免了单继承的局限性
-    * 在定义线程时，建议使用实现方式
-    *
-    * */
-    class MyRunnable implements Runnable {
-
-        @Override
-        public void run() {
-
-        }
-    }
-
-
 }
+
+class Cus implements Runnable {
+    private Bank bank = new Bank();
+
+    @Override
+    public void run() {
+        for (int i = 0; i < 3; i++) {
+            bank.add(100);
+        }
+    }
+}
+
+
+/*
+* 线程继承自Thread
+*
+* */
+class MyThread extends Thread {
+
+    public MyThread(String name) {
+        super(name);       //父类已经有这样的构造方法，子类只要调用super（）方法即可 这样的构造方法可以给线程命名
+    }
+
+    @Override
+    public void run() {
+        super.run();
+        //获取线程的名称，一般通过  标准通用方式：Thread.currentThread().getName()
+        Log.v("haha", "Thread name ==== " + Thread.currentThread().getName());
+    }
+}
+
+/*
+* 线程实现Runnable
+* 这个类只能当做参数传给其他线程使用，不能使用start()方法启动该线程
+* MyRunnable的实例不是线程
+*
+*
+* 步骤：
+* 1、定义类实现Runnable接口
+* 2、覆盖Runnable接口中的run方法，将线程要运行的代码放在该Run方法中
+* 3、通过Thread类建立线程对象
+* 4、将Runnable接口的子类对象作为实际参数传递给Thread类的构造函数
+* 5、调用Thread类的start方法开启线程并调用Runnable接口子类的run方法
+*
+*
+* 实现方式和继承方式有什么区别
+* 实现方式的好处：避免了单继承的局限性
+* 在定义线程时，建议使用实现方式
+*
+* */
+class MyRunnable implements Runnable {
+
+    @Override
+    public void run() {
+
+    }
+}
+
