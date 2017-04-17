@@ -1,1 +1,1 @@
-include ':thread', ':string'
+include ':thread', ':string', ':collection'
