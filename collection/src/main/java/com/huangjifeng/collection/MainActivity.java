@@ -4,9 +4,12 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
+
+import static android.icu.lang.UCharacter.GraphemeClusterBreak.T;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -69,6 +72,13 @@ public class MainActivity extends AppCompatActivity {
         *       改：set(index,element)
         *       查：get(index)     subList(from,to)     listIterator()
         *
+        * LinkedList : 的特有方法
+        *       addFirst()
+        *       addLast()
+        *       getFirst()    获取元素但是不删除元素
+        *       getLast()     获取元素但是不删除元素
+        *       removeFirst()      获取元素，但是删除元素
+        *       removeLast()       获取元素，但是删除元素
         *
         * */
         ArrayList arrayList56 = new ArrayList();
@@ -81,7 +91,7 @@ public class MainActivity extends AppCompatActivity {
         arrayList56.set(2, "hahahhahah");//修改指定位置的元素
         arrayList56.get(2);            //通过角标获取元素
         arrayList56.indexOf("haha03"); //通过indexOf获取对象的位置
-        arrayList56.subList(1,4);      //获取子列表，包含头不包含尾
+        arrayList56.subList(1, 4);      //获取子列表，包含头不包含尾
         Iterator iterator1 = arrayList56.iterator();
         while (iterator1.hasNext()) {
             iterator1.next();
@@ -93,9 +103,9 @@ public class MainActivity extends AppCompatActivity {
         方法是有限的，只能对元素进行判断，取出，删除的操作
         */
         ListIterator listIterator = arrayList56.listIterator();
-        while (listIterator.hasNext()){
+        while (listIterator.hasNext()) {
             Object object = listIterator.next();
-            if (object.equals("haha02")){
+            if (object.equals("haha02")) {
                 listIterator.add("haha009");   //迭代过程中进行增
                 listIterator.remove();
                 listIterator.set("haha0102");
@@ -103,5 +113,99 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
+        //List集合判断元素是否相同，依据的是元素的equals方法，任何对象都可以重写Object的equals（）方
+        //法重新制定比较方法，其实，remove(Object obj) 和 contains(Object obj) 内部都是使用的equals()方法进行比较
+
+
+
+        /*
+        * 泛型：
+        * 好处：
+        *       1、将运行时期出现问题ClassCastException，转移到了编译时期，方便于程序员解决问题，让
+        *       运行时期问题减少，安全
+        *       2、避免了强转转换的麻烦
+        *
+        *
+        * */
+        List<String> arrayList002 = new ArrayList<String>();
+        Iterator<String> iterator002 = arrayList002.iterator();
+        while (iterator002.hasNext()) {
+            String string002 = iterator002.next();
+        }
+
+        //比较器中也使用泛型
+        abstract class MyComparator implements Comparator<String>{
+            @Override
+            public int compare(String o1, String o2) {
+                int num = new Integer(o1.length()).compareTo(new Integer(o2.length()));
+                if (num == 0){
+                    return o1.compareTo(o2);
+                }
+                return num;
+            }
+        }
+
+        //泛型类：  这个类是对一类对象可以进行操作的，所以需要使用泛型来扩展使用范围，可以是工具类
+        //当类中要操作的引用数据类型不确定的时候，可以定义泛型来扩展
+        //泛型类定义的泛型，在整个类中有效，如果被方法使用，那么泛型类的对象明确要操作的具体类型后，
+        // 所有的操作的类型就已经固定了
+        class Utils<Student>{
+            private Student student;
+
+            public void setStudent(Student student) {
+                this.student = student;
+            }
+
+            public Student getStudent() {
+                return student;
+            }
+        }
+
+        //泛型方法：
+        //为了让不同的方法可以操作不同的类型，而且类型还不确定，那么可以将泛型定义在方法上
+        //泛型类和泛型方法是可以混用的，特殊之处是：静态方法不可以访问类上定义的泛型。如果
+        //静态方法操作的应用数据类型不确定，可以将泛型定义的方法上。
+        //静态方法的<T>放到返回值类型的前面
+        class Demo{
+            public <T> void show(T t){
+
+            }
+            public <Q> void print(Q q){
+
+            }
+            public static  <H> void haha(H h){
+
+            }
+        }
+
+        /*
+        * 泛型限定
+        * ？   通配符，也可以理解为占位符
+        * 泛型的限定
+        * ？  extends E : 可以接受E类型或者E的子类型，上线
+        * ？  super E : 可以接受E类型或者E的父类型， 下线
+        * */
+
+
+
     }
+    //泛型定义在接口上，实现泛型接口的实例对象既可以使用泛型<T>，也可以在实现泛型的时候使用下面的
+    //下面这两种都是可以接受的
+    class InterImpl001<T> implements Inter<T>{
+
+        @Override
+        public void show(T t) {
+
+        }
+    }
+    class InterImpl002 implements Inter<String>{
+
+        @Override
+        public void show(String t) {
+
+        }
+    }
+
+
+
 }
